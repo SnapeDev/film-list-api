@@ -1,69 +1,69 @@
-let movies = [];
-let nextId = 0;
+const Movie = require("./schemas/Movie");
+const createError = require("http-errors");
 
-exports.getAllMovies = (req, res) => {
-  res.json(movies);
+exports.getAllMovies = async (req, res) => {
+  try {
+    const movies = await Movie.find();
+    res.json(movies);
+  } catch (error) {
+    next(createError(500, error.message));
+  }
 };
 
-exports.createMovie = (req, res) => {
+exports.createMovie = async (req, res) => {
   // store request body in a variable
   // req body contains todo object
-  const { title, director, watched } = req.body;
+  try {
+    const { title, director, watched } = req.body;
 
-  if (!title || !director) {
-    return res
-      .status(400)
-      .json({ message: "Title and director are required." });
+    const newMovie = await Movie.create({
+      title,
+      director,
+      watched: Boolean(watched),
+    });
+
+    res.send(newMovie);
+  } catch (error) {
+    next(createError(400, error.message));
   }
-
-  const newMovie = {
-    id: nextId++,
-    title,
-    director,
-    watched: watched || false,
-  };
-
-  movies.push(newMovie);
-  res.status(201).json(newMovie);
 };
 
-exports.getMovieById = (req, res) => {
-  const { id } = req.params;
-  const movie = movies.find((m) => m.id === parseInt(id));
+exports.getMovieById = async (req, res, next) => {
+  try {
+    const movie = await Movie.findById(req.params.id);
 
-  if (!movie) {
-    return res.status(404).json({ message: "Movie not found." });
+    if (!movie) {
+      return next(createError(404, "Movie not found."));
+    }
+    res.send(movie);
+  } catch (error) {
+    next(createError(500, error.message));
   }
-
-  res.json(movie);
 };
 
-exports.updateMovie = (req, res) => {
-  const { id } = req.params;
-  const { title, director, watched } = req.body;
-  const movie = movies.find((m) => m.id === parseInt(id));
-
-  if (!movie) {
-    return res.status(404).json({ message: "Movie not found." });
+exports.updateMovie = async (req, res) => {
+  try {
+    const movie = await Movie.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true,
+    });
+    if (!movie) {
+      return next(createError(404, "Movie not found."));
+    }
+    res.send(movie);
+  } catch (error) {
+    next(createError(500, error.message));
   }
-
-  if (title) movie.title = title;
-  if (director) movie.director = director;
-  if (watched !== undefined) movie.watched = watched;
-
-  res.json(movie);
 };
 
-exports.deleteMovie = (req, res) => {
-  const { id } = req.params;
-  // make it so the array filters out the object
-  // that has the id which matches the one in our params
-  const movieIndex = movies.findIndex((m) => m.id === parseInt(id));
-
-  if (movieIndex === -1) {
-    return res.status(404).json({ message: "Movie not found." });
+exports.deleteMovie = async (req, res, next) => {
+  try {
+    const movie = await Movie.findByIdAndDelete(req.params.id);
+    if (!movie) {
+      return next(createError(404, "Movie not found."));
+    }
+    res.send(movie);
+  } catch (error) {
+    next(createError(500, error.message));
   }
-
-  movies.splice(movieIndex, 1);
-  res.status(204).send();
 };
