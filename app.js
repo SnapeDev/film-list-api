@@ -1,7 +1,7 @@
 const express = require("express");
 const app = express();
 const moviesRouter = require("./router");
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 const dotenv = require("dotenv");
 const connectDB = require("./config/db");
 const User = require("./schemas/User");
